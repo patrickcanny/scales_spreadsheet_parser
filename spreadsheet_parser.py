@@ -72,7 +72,7 @@ credentials = ServiceAccountCredentials.from_json_keyfile_name('Scales-79fd55601
 client = gspread.authorize(credentials)
 
 # Open the spreadsheet we want to look at
-sheet = client.open('Vol. 3 Freestyles').sheet1
+sheet = client.open('Vol. 4 Freestyles').sheet1
 
 # Grab all the submitted freestyles from the sheet
 freestyles = sheet.get_all_records()
@@ -85,9 +85,9 @@ pro_finals = list( filter(lambda x: x['Round of Video'] == 'Pro Final', freestyl
 
 # filter the submitted pro finals by who made finals
 pro_finals_did_not_final = list(
-        filter(lambda x: x['Final Submitted'] == 'no final', pro_finals))
+        filter(lambda x: x['Made Finals'] == 0, pro_finals))
 pro_finalists = list(
-        filter(lambda x: x['Final Submitted'] != 'no final', pro_finals))
+        filter(lambda x: x['Made Finals'] == 1, pro_finals))
 
 # Print the freestyle lists
 if SHOW_FREESTYLES:
