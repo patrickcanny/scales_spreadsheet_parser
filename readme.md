@@ -3,7 +3,7 @@ Download all freestyles from a spreadsheet, renaming them and saving them to a g
 
 ## Installation
 Prerequisites: 
-- GNU make
+- GNU make (if you want to use the makefile commands, you can also run the makefile commands without make)
 - Python 3
 - An active credentials JSON (you'll need to get this from patrick or create it yourself)
 
