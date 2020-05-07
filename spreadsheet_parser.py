@@ -27,10 +27,14 @@ def download_by_division(division_name, freestyles):
     for freestyle in freestyles:
         url = freestyle['Freestyle Link']
         player_name = freestyle['Name']
+        if freestyle['Order']:
+            order = freestyle['Order']
+        else:
+            print('There is no order value for ' + player_name + '\'s freestyle.')
+            order = 999
 
-        # TODO: if we want to add order data, we just need to add the field to the
-        # spreadsheet and append it to the front of the video names
-        new_video_name = 'Scales Open V4 ' + division_name + ' - ' + player_name
+        # prepend order to be able to sort the videos 
+        new_video_name = str(order) +  ' Scales Open V4 ' + division_name + ' - ' + player_name
 
         try:
             # setup youtube object
