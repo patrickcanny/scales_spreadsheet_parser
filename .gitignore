@@ -1,3 +1,4 @@
 *.json
 Open/*
-env/*
+./video_uploader/env/*
+./video_uploader/*.json
