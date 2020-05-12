@@ -24,6 +24,12 @@ SHOW_FREESTYLES = False
 def download_by_division(division_name, freestyles):
     failed_downloads = []
     unavailable_freestyles = []
+    # download to a folder that will be zipped later
+    download_folder = './Open/' + '_'.join(division_name.split(' '))
+    try:
+        os.mkdir(download_folder)
+    except Exception:
+        pass
     for freestyle in freestyles:
         url = freestyle['Freestyle Link']
         player_name = freestyle['Name']
@@ -39,17 +45,22 @@ def download_by_division(division_name, freestyles):
         try:
             # setup youtube object
             video = pt.YouTube(url).streams.first()
-
-            # download to a folder that will be zipped later
-            download_folder = './Open/' + '_'.join(division_name.split(' '))
             video.download(output_path=download_folder, filename=new_video_name)
             print('Downloaded ' + player_name + '\'s ' + division_name)
-        except pt.exceptions.VideoUnavailable:
+        except pt.exceptions.VideoUnavailable as e:
+            print('-- Video Unavailable -------------------------')
+            print (e)
             print(player_name + '\'s ' + division_name + ' video is unavailable. Please contact them and have them re-upload.')
             unavailable_freestyles.append(str(player_name + ' ' + division_name))
-        except:
-            print('There was an unknown issue with ' + player_name + '\'s ' + division_name + ', try downloading this video manually.')
+            print('-- Video Unavailable -------------------------')
+        except Exception as e:
+            print('--EXCEPTION -------------------------')
+            print(e)
+            print('This is an issue with ' + player_name + '\'s ' + division_name + ', try downloading this video manually.')
             failed_downloads.append(str(url))
+            print('--EXCEPTION -------------------------')
+        
+        print()
 
     # After everything is done, write the failed downloads and unavilable
     # videos to a file in the appropriate folder
@@ -111,6 +122,10 @@ if DEBUG:
     print('number of pro finalists ' +
             str(len(pro_finalists)))
 # I/O
+try:
+    os.mkdir('Open')
+except Exception:
+    pass
 option = ''
 print('1. download all freestyles')
 print('2. download pro prelims')
@@ -126,7 +141,7 @@ for line in fileinput.input():
         download_by_division('Pro Prelims', pro_prelims)
         download_by_division('Amateur', amateurs)
         download_by_division('Pro Finals', pro_finalists)
-        download_by_division('Non Finalists', pro_finalists_did_not_final)
+        download_by_division('Non Finalists', pro_finals_did_not_final)
         break
     elif option == '2':
         download_by_division('Pro Prelims', pro_prelims)
@@ -138,7 +153,7 @@ for line in fileinput.input():
         download_by_division('Amateur', amateurs)
         break
     elif option == '5':
-        download_by_division('Non Finalists', pro_finalists_did_not_final)
+        download_by_division('Non Finalists', pro_finals_did_not_final)
         break
     elif option == '6':
         print('bye (-:')
