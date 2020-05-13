@@ -80,8 +80,9 @@ def download_by_division(division_name, freestyles):
         unavailable_videos_file.close()
 
     if len(successful_download_names) > 0:
+        successes = sorted(list(set(successful_download_names)))
         successful_dl_names = open(download_folder + '/' + division_name + '_Downloaded_Players.csv', 'w+')
-        successful_dl_names.writelines(map(lambda x: x+'\n', list(set(successful_download_names))))
+        successful_dl_names.writelines(map(lambda x: x+'\n', successes))
         successful_dl_names.close()
 
     # wrap up
