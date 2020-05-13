@@ -24,6 +24,7 @@ SHOW_FREESTYLES = False
 def download_by_division(division_name, freestyles):
     failed_downloads = []
     unavailable_freestyles = []
+    successful_download_names = []
     # download to a folder that will be zipped later
     download_folder = './Open/' + '_'.join(division_name.split(' '))
     try:
@@ -35,6 +36,7 @@ def download_by_division(division_name, freestyles):
         player_name = freestyle['Name']
         if freestyle['Order']:
             order = freestyle['Order']
+            order = str(order).zfill(3)
         else:
             print('There is no order value for ' + player_name + '\'s freestyle.')
             order = 999
@@ -47,6 +49,7 @@ def download_by_division(division_name, freestyles):
             video = pt.YouTube(url).streams.first()
             video.download(output_path=download_folder, filename=new_video_name)
             print('Downloaded ' + player_name + '\'s ' + division_name)
+            successful_download_names.append(str(player_name))
         except pt.exceptions.VideoUnavailable as e:
             print('-- Video Unavailable -------------------------')
             print (e)
@@ -73,6 +76,11 @@ def download_by_division(division_name, freestyles):
         unavailable_videos_file = open(download_folder + '/_unavailable_videos.txt', 'w+')
         unavailable_videos_file.writelines(map(lambda x: x+'\n', unavailable_freestyles))
         unavailable_videos_file.close()
+
+    if len(successful_download_names) > 0:
+        successful_dl_names = open(download_folder + '/' + division_name + '_Downloaded_Players', 'w+')
+        successful_dl_names.writelines(map(lambda x: x+'\n', list(set(successful_download_names))))
+        successful_dl_names.close()
 
     # wrap up
     print('Done with ' + division_name)
