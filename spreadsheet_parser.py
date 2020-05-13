@@ -89,6 +89,25 @@ def download_by_division(division_name, freestyles):
     print('Done with ' + division_name)
 
 
+# @function generate_titles - write video titles to a text file sorted by placement 
+# @param division_name a string that represents the divison name
+# @param freestyles a list of freestyles
+def generate_titles(division_name, freestyles):
+    print('Generating titles for ' + division_name)
+    titles = []
+    for freestyle in freestyles:
+        if freestyle['Placement']:
+            place = freestyle['Placement']
+            name = freestyle['Name']
+            video_title = f'Scales Open Vol. 4 - {division_name} - {place} - {name}'
+            titles.append(video_title)
+    if len(titles) > 0:
+        title_file = open(f'./{division_name}_Titles.txt', 'w+')
+        title_file.writelines(map(lambda x: x+'\n', titles))
+        title_file.close()
+    print('Done with ' + division_name)
+    return
+
 # Setup Service account
 scope = [
         'https://spreadsheets.google.com/feeds',
@@ -143,7 +162,8 @@ print('2. download pro prelims')
 print('3. download pro finalists')
 print('4. download amateur')
 print('5. download non-finaist pro freestyles')
-print('6. exit')
+print('6. Generate All Video Titles')
+print('7. exit')
 print()
 print('Select an option (1-6):')
 for line in fileinput.input():
@@ -167,5 +187,10 @@ for line in fileinput.input():
         download_by_division('Non Finalists', pro_finals_did_not_final)
         break
     elif option == '6':
+        generate_titles('Pro Prelims',pro_prelims)
+        generate_titles('Pro Finals',pro_finalists)
+        generate_titles('Amateur',amateurs)
+        break
+    elif option == '7':
         print('bye (-:')
         break
