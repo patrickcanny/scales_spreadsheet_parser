@@ -49,7 +49,9 @@ def download_by_division(division_name, freestyles):
             video = pt.YouTube(url).streams.first()
             video.download(output_path=download_folder, filename=new_video_name)
             print('Downloaded ' + player_name + '\'s ' + division_name)
-            successful_download_names.append(str(player_name))
+            upper_name = player_name.upper()
+            csv_string = ",".join(upper_name.split(' '))
+            successful_download_names.append(csv_string)
         except pt.exceptions.VideoUnavailable as e:
             print('-- Video Unavailable -------------------------')
             print (e)
@@ -78,7 +80,7 @@ def download_by_division(division_name, freestyles):
         unavailable_videos_file.close()
 
     if len(successful_download_names) > 0:
-        successful_dl_names = open(download_folder + '/' + division_name + '_Downloaded_Players', 'w+')
+        successful_dl_names = open(download_folder + '/' + division_name + '_Downloaded_Players.csv', 'w+')
         successful_dl_names.writelines(map(lambda x: x+'\n', list(set(successful_download_names))))
         successful_dl_names.close()
 
