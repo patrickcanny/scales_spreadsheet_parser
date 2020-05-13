@@ -60,7 +60,7 @@ def download_by_division(division_name, freestyles):
             print('--EXCEPTION -------------------------')
             print(e)
             print('This is an issue with ' + player_name + '\'s ' + division_name + ', try downloading this video manually.')
-            failed_downloads.append(str(url))
+            failed_downloads.append(player_name + '-' + str(url))
             print('--EXCEPTION -------------------------')
         
         print()
