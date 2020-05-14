@@ -25,6 +25,14 @@ def download_by_division(division_name, freestyles):
     failed_downloads = []
     unavailable_freestyles = []
     successful_download_names = []
+    thumbnail_path = '/Users/colinbeckford/Desktop/Scales/Thumbnail Pictures/'
+    ending = ""
+    if division_name == 'Amateur':
+        ending = '_A'
+    elif division_name == 'Pro Finals':
+        ending = '_F'
+    elif division_name == 'Pro Prelims':
+        ending = '_P'
     # download to a folder that will be zipped later
     download_folder = './Open/' + '_'.join(division_name.split(' '))
     try:
@@ -49,8 +57,13 @@ def download_by_division(division_name, freestyles):
             video = pt.YouTube(url).streams.first()
             video.download(output_path=download_folder, filename=new_video_name)
             print('Downloaded ' + player_name + '\'s ' + division_name)
+            first_name = player_name.split(' ')[0]
+            last_initial = player_name.split(' ')[1][0]
             upper_name = player_name.upper()
-            csv_string = ",".join(upper_name.split(' '))
+            thumb = thumbnail_path + first_name + last_initial + ending + '.jpg'
+            csv_vals = list(upper_name.split(' '))
+            csv_vals.append(thumb)
+            csv_string = ",".join(csv_vals)
             successful_download_names.append(csv_string)
         except pt.exceptions.VideoUnavailable as e:
             print('-- Video Unavailable -------------------------')
