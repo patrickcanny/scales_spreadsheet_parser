@@ -54,7 +54,7 @@ def download_by_division(division_name, freestyles):
 
         try:
             # setup youtube object
-            video = pt.YouTube(url).streams.first()
+            video = pt.YouTube(url).streams.get_highest_resolution()
             video.download(output_path=download_folder, filename=new_video_name)
             print('Downloaded ' + player_name + '\'s ' + division_name)
             first_name = player_name.split(' ')[0]
