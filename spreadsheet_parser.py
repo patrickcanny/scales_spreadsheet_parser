@@ -12,10 +12,70 @@ from oauth2client.service_account import ServiceAccountCredentials
 # ------------------------------------Python Packages
 import os
 import fileinput
+import subprocess
+import re
+import traceback
+import time
 
 # Debugging variables, ideally we can set these in the script at runtime
 DEBUG = False
 SHOW_FREESTYLES = False
+
+def download_video(url, player_name, division_name, download_folder, new_video_name, failed_downloads, unavailable_freestyles):
+    videos = None
+    while not videos:
+        try:
+            videos = pt.YouTube(url).streams.filter(adaptive=True).filter(type='video')
+        except Exception as e:
+            print('--EXCEPTION -------------------------')
+            traceback.print_exc()
+            print('Retrying video streams creation')
+            print('--EXCEPTION -------------------------')
+
+    for video in videos:
+        print(video)
+        print(video.filesize_approx)
+        if video.filesize_approx < 60000000:
+            if video.filesize_approx < 10000000:
+                print('This Video is being downloaded in a low qulity. You may need to do a manual DL')
+                failed_downloads.append(player_name + '-' + str(url))
+            try:
+                video.download(output_path=download_folder, filename=new_video_name)
+                time.sleep(10)
+                break
+            except pt.exceptions.VideoUnavailable as e:
+                print('-- Video Unavailable -------------------------')
+                print (e)
+                print(player_name + '\'s ' + division_name + ' video is unavailable. Please contact them and have them re-upload.')
+                unavailable_freestyles.append(str(player_name + ' ' + division_name))
+                print('-- Video Unavailable -------------------------')
+            except Exception as e:
+                traceback.print_exc()
+                print('Issue with this stream, trying next video stream')
+
+def download_audio(url, download_folder, new_audio_name):
+    audios = None
+    while not audios:
+        try:
+            audios = pt.YouTube(url).streams.filter(adaptive=True).filter(type='audio')
+        except:
+            print('Retrying audio stream fetch...')
+
+    for audio in audios:
+        try:
+            audio.download(output_path=download_folder, filename=new_audio_name)
+            # break when we're successful so we don't overwrite
+            break
+        except:
+            print('Trying next audio stream...')
+
+def merge_video(vid_path, aud_path, final_name):
+    vid_path = re.escape(vid_path)
+    aud_path = re.escape(aud_path)
+    final_name = re.escape(final_name)
+    cmd = f'ffmpeg -i {vid_path}.mp4 -i {aud_path}.mp4 -c:v copy -c:a aac {final_name}.mp4'
+    print(cmd)
+    subprocess.call(cmd, shell=True)
 
 # @function download_by_division given a division name and a list of freestyles
 # for that division, download them into an appropriate folder
@@ -50,34 +110,27 @@ def download_by_division(division_name, freestyles):
             order = 999
 
         # prepend order to be able to sort the videos 
-        new_video_name = str(order) +  ' Scales Open V4 ' + division_name + ' - ' + player_name
+        new_video_name = str(order) +  ' Scales Open V4 ' + division_name + ' - ' + player_name + '_VIDEO'
+        new_audio_name = str(order) +  ' Scales Open V4 ' + division_name + ' - ' + player_name + '_AUDIO'
+        final_name = str(order) +  ' Scales Open V4 ' + division_name + ' - ' + player_name
 
-        try:
-            # setup youtube object
-            video = pt.YouTube(url).streams.get_highest_resolution()
-            video.download(output_path=download_folder, filename=new_video_name)
-            print('Downloaded ' + player_name + '\'s ' + division_name)
-            first_name = player_name.split(' ')[0]
-            last_initial = player_name.split(' ')[1][0]
-            upper_name = player_name.upper()
-            thumb = thumbnail_path + first_name + last_initial + ending + '.jpg'
-            csv_vals = list(upper_name.split(' '))
-            csv_vals.append(thumb)
-            csv_string = ",".join(csv_vals)
-            successful_download_names.append(csv_string)
-        except pt.exceptions.VideoUnavailable as e:
-            print('-- Video Unavailable -------------------------')
-            print (e)
-            print(player_name + '\'s ' + division_name + ' video is unavailable. Please contact them and have them re-upload.')
-            unavailable_freestyles.append(str(player_name + ' ' + division_name))
-            print('-- Video Unavailable -------------------------')
-        except Exception as e:
-            print('--EXCEPTION -------------------------')
-            print(e)
-            print('This is an issue with ' + player_name + '\'s ' + division_name + ', try downloading this video manually.')
-            failed_downloads.append(player_name + '-' + str(url))
-            print('--EXCEPTION -------------------------')
-        
+
+        download_video(url, player_name, division_name, download_folder, new_video_name, failed_downloads, unavailable_freestyles)
+        download_audio(url, download_folder, new_audio_name)
+        merge_video(download_folder + '/' + new_video_name, download_folder + '/' + new_audio_name, download_folder + '/' + final_name)
+
+        print('Downloaded ' + player_name + '\'s ' + division_name)
+        os.remove(download_folder + '/' + new_video_name + '.mp4')
+        os.remove(download_folder + '/' + new_audio_name + '.mp4')
+        print('Removed video/audio temporary files.')
+        first_name = player_name.split(' ')[0]
+        last_initial = player_name.split(' ')[1][0]
+        upper_name = player_name.upper()
+        thumb = thumbnail_path + first_name + last_initial + ending + '.jpg'
+        csv_vals = list(upper_name.split(' '))
+        csv_vals.append(thumb)
+        csv_string = ",".join(csv_vals)
+        successful_download_names.append(csv_string)
         print()
 
     # After everything is done, write the failed downloads and unavilable
