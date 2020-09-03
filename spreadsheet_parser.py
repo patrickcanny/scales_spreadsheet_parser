@@ -7,6 +7,7 @@
 import gspread
 import pprint
 import pytube as pt
+from pytube import YouTube
 from oauth2client.service_account import ServiceAccountCredentials
 
 # ------------------------------------Python Packages
@@ -16,66 +17,70 @@ import subprocess
 import re
 import traceback
 import time
+from multiprocessing import Pool
 
 # Debugging variables, ideally we can set these in the script at runtime
-DEBUG = False
-SHOW_FREESTYLES = False
+DEBUG = True
+SHOW_FREESTYLES = True
+NUM_THREADS = 5
 
-def download_video(url, player_name, division_name, download_folder, new_video_name, failed_downloads, unavailable_freestyles):
-    videos = None
-    while not videos:
-        try:
-            videos = pt.YouTube(url).streams.filter(adaptive=True).filter(type='video')
-        except Exception as e:
-            print('--EXCEPTION -------------------------')
-            traceback.print_exc()
-            print('Retrying video streams creation')
-            print('--EXCEPTION -------------------------')
+successful_dl_names = []
 
-    for video in videos:
-        print(video)
-        print(video.filesize_approx)
-        if video.filesize_approx < 60000000:
-            if video.filesize_approx < 10000000:
-                print('This Video is being downloaded in a low qulity. You may need to do a manual DL')
-                failed_downloads.append(player_name + '-' + str(url))
-            try:
-                video.download(output_path=download_folder, filename=new_video_name)
-                time.sleep(10)
-                break
-            except pt.exceptions.VideoUnavailable as e:
-                print('-- Video Unavailable -------------------------')
-                print (e)
-                print(player_name + '\'s ' + division_name + ' video is unavailable. Please contact them and have them re-upload.')
-                unavailable_freestyles.append(str(player_name + ' ' + division_name))
-                print('-- Video Unavailable -------------------------')
-            except Exception as e:
-                traceback.print_exc()
-                print('Issue with this stream, trying next video stream')
+def dl_pro_pre(row):
+    yt_dl(row, 'Pro_Prelim', '_P')
 
-def download_audio(url, download_folder, new_audio_name):
-    audios = None
-    while not audios:
-        try:
-            audios = pt.YouTube(url).streams.filter(adaptive=True).filter(type='audio')
-        except:
-            print('Retrying audio stream fetch...')
+def dl_pro_final(row):
+    yt_dl(row, 'Pro_Final', '_F')
 
-    for audio in audios:
-        try:
-            audio.download(output_path=download_folder, filename=new_audio_name)
-            # break when we're successful so we don't overwrite
-            break
-        except:
-            print('Trying next audio stream...')
+def dl_am(row):
+    yt_dl(row, 'Amateur', '_A')
 
-def merge_video(vid_path, aud_path, final_name):
-    vid_path = re.escape(vid_path)
-    aud_path = re.escape(aud_path)
-    final_name = re.escape(final_name)
-    cmd = f'ffmpeg -i {vid_path}.mp4 -i {aud_path}.mp4 -c:v copy -c:a aac {final_name}.mp4'
-    print(cmd)
-    subprocess.call(cmd, shell=True)
+def dl_over_30(row):
+    yt_dl(row, 'Over_30', '_30')
+
+def yt_dl(row, division_name='NO_DIV', ending=''):
+    url = row['Link']
+    player_name = row['Name']
+    if row['Order']:
+        order = row['Order']
+        order = str(order).zfill(3)
+    else:
+        print('There is no order value for ' + player_name + '\'s freestyle.')
+        order = 999
+
+    new_video_name = str(order) +  ' Scales Open V4 ' + division_name + ' - ' + player_name
+    yt_dl_command = ''
+
+    # url setup
+    base = 'youtube-dl --no-check-certificate'
+
+    # always get best we can
+    quality_control = '-f best'
+
+    # location
+    location = f'-o \'./Open/{division_name}/{new_video_name}.mp4\''
+
+    yt_dl_command = ' '.join([base, location, quality_control, url])
+    print(yt_dl_command)
+    try:
+        subprocess.call(yt_dl_command, shell=True)
+    except Exception as e:
+        print('--EXCEPTION -------------------------')
+        print(e)
+        traceback.print_exc()
+        print('--EXCEPTION -------------------------') 
+
+    thumbnail_path = '/Users/colinbeckford/Desktop/Scales/Thumbnail Pictures/'
+    first_name = player_name.split(' ')[0]
+    last_initial = player_name.split(' ')[1][0]
+    upper_name = player_name.upper()
+    thumb = thumbnail_path + first_name + last_initial + ending + '.jpg'
+    csv_vals = list(upper_name.split(' '))
+    csv_vals.append(thumb)
+    csv_string = ",".join(csv_vals)
+    successful_dl_names.append(csv_string)
+    print()
+    return(new_video_name)
 
 # @function download_by_division given a division name and a list of freestyles
 # for that division, download them into an appropriate folder
@@ -84,73 +89,26 @@ def merge_video(vid_path, aud_path, final_name):
 def download_by_division(division_name, freestyles):
     failed_downloads = []
     unavailable_freestyles = []
-    successful_download_names = []
+    dl_function = None
+    # change if needed
     thumbnail_path = '/Users/colinbeckford/Desktop/Scales/Thumbnail Pictures/'
+
     ending = ""
     if division_name == 'Amateur':
+        dl_function = dl_am
         ending = '_A'
-    elif division_name == 'Pro Finals':
+    elif division_name == 'Pro_Finals':
+        dl_function = dl_pro_final
         ending = '_F'
-    elif division_name == 'Pro Prelims':
+    elif division_name == 'Pro_Prelims':
+        dl_function = dl_pro_pre
         ending = '_P'
-    # download to a folder that will be zipped later
-    download_folder = './Open/' + '_'.join(division_name.split(' '))
-    try:
-        os.mkdir(download_folder)
-    except Exception:
-        pass
-    for freestyle in freestyles:
-        url = freestyle['Freestyle Link']
-        player_name = freestyle['Name']
-        if freestyle['Order']:
-            order = freestyle['Order']
-            order = str(order).zfill(3)
-        else:
-            print('There is no order value for ' + player_name + '\'s freestyle.')
-            order = 999
+    elif division_name == 'Over 30':
+        dl_function = dl_over_30
+        ending = '_o_30'
 
-        # prepend order to be able to sort the videos 
-        new_video_name = str(order) +  ' Scales Open V4 ' + division_name + ' - ' + player_name + '_VIDEO'
-        new_audio_name = str(order) +  ' Scales Open V4 ' + division_name + ' - ' + player_name + '_AUDIO'
-        final_name = str(order) +  ' Scales Open V4 ' + division_name + ' - ' + player_name
-
-
-        download_video(url, player_name, division_name, download_folder, new_video_name, failed_downloads, unavailable_freestyles)
-        download_audio(url, download_folder, new_audio_name)
-        merge_video(download_folder + '/' + new_video_name, download_folder + '/' + new_audio_name, download_folder + '/' + final_name)
-
-        print('Downloaded ' + player_name + '\'s ' + division_name)
-        os.remove(download_folder + '/' + new_video_name + '.mp4')
-        os.remove(download_folder + '/' + new_audio_name + '.mp4')
-        print('Removed video/audio temporary files.')
-        first_name = player_name.split(' ')[0]
-        last_initial = player_name.split(' ')[1][0]
-        upper_name = player_name.upper()
-        thumb = thumbnail_path + first_name + last_initial + ending + '.jpg'
-        csv_vals = list(upper_name.split(' '))
-        csv_vals.append(thumb)
-        csv_string = ",".join(csv_vals)
-        successful_download_names.append(csv_string)
-        print()
-
-    # After everything is done, write the failed downloads and unavilable
-    # videos to a file in the appropriate folder
-    if len(failed_downloads) > 0:
-        failed_dl_file = open(download_folder + '/_failed_downloads.txt', 'w+')
-        failed_dl_file.writelines(map(lambda x: x+'\n', failed_downloads))
-        failed_dl_file.close()
-
-    if len(unavailable_freestyles) > 0:
-        unavailable_videos_file = open(download_folder + '/_unavailable_videos.txt', 'w+')
-        unavailable_videos_file.writelines(map(lambda x: x+'\n', unavailable_freestyles))
-        unavailable_videos_file.close()
-
-    if len(successful_download_names) > 0:
-        successes = sorted(list(set(successful_download_names)))
-        successes.insert(0, 'FirstName,LastName')
-        successful_dl_names = open(download_folder + '/' + division_name + '_Downloaded_Players.csv', 'w+')
-        successful_dl_names.writelines(map(lambda x: x+'\n', successes))
-        successful_dl_names.close()
+    with Pool(NUM_THREADS) as pool:
+        result = pool.map(dl_function, freestyles)
 
     # wrap up
     print('Done with ' + division_name)
@@ -183,41 +141,50 @@ scope = [
 credentials = ServiceAccountCredentials.from_json_keyfile_name('Scales-79fd55601efd.json', scope)
 client = gspread.authorize(credentials)
 
+print(client.open('Scales Intl. Freestyle Submission').worksheets())
+
 # Open the spreadsheet we want to look at
-sheet = client.open('Vol. 4 Freestyles').sheet1
+# print(client.list_spreadsheet_files())
+all_freestyles = client.open('Scales Intl. Freestyle Submission').worksheet('Sheet1')
+sheet_pro_pre = client.open('Scales Intl. Freestyle Submission').worksheet('pro_prelim')
+sheet_pro_final = client.open('Scales Intl. Freestyle Submission').worksheet('pro_final')
+sheet_amateur = client.open('Scales Intl. Freestyle Submission').worksheet('amateur')
+sheet_over_30 = client.open('Scales Intl. Freestyle Submission').worksheet('over_30')
 
 # Grab all the submitted freestyles from the sheet
-freestyles = sheet.get_all_records()
+pro_prelims = list(sheet_pro_pre.get_all_records())
+pro_finals = list(sheet_pro_final.get_all_records())
+amateurs = list(sheet_amateur.get_all_records())
+over_30 = list(sheet_over_30.get_all_records())
+
+# set up pp
 pp = pprint.PrettyPrinter()
 
 # filter the freestyles by round
-amateurs = list( filter(lambda x: x['Round of Video'] == 'Amateur', freestyles) )
-pro_prelims = list( filter(lambda x: x['Round of Video'] == 'Pro Prelim', freestyles) )
-pro_finals = list( filter(lambda x: x['Round of Video'] == 'Pro Final', freestyles) )
+# amateurs = list( filter(lambda x: x['Round of Video'] == 'Amateur', freestyles) )
+# pro_prelims = list( filter(lambda x: x['Round of Video'] == 'Pro Prelim', freestyles) )
+# pro_finals = list( filter(lambda x: x['Round of Video'] == 'Pro Final', freestyles) )
 
 # filter the submitted pro finals by who made finals
-pro_finals_did_not_final = list(
-        filter(lambda x: x['Made Finals'] == 0, pro_finals))
+# pro_finals_did_not_final = list(
+#         filter(lambda x: x['Made Finals'] == 0, pro_finals))
 pro_finalists = list(
-        filter(lambda x: x['Made Finals'] == 1, pro_finals))
+        filter(lambda x: x['Finalist'] == 'y', pro_finals))
 
 # Print the freestyle lists
 if SHOW_FREESTYLES:
     pp.pprint(amateurs)
     pp.pprint(pro_prelims)
-    pp.pprint(pro_finals_did_not_final)
+    pp.pprint(pro_finals)
+    pp.pprint(over_30)
     pp.pprint(pro_finalists)
 
 # Print the number of total freestyles (sanity check)
 if DEBUG:
-    print('number of total freestyles: ' + str(len(freestyles)))
     print('number of amateur freestyles: ' + str(len(amateurs)))
     print('number of pro prelim freestyles: ' + str(len(pro_prelims)))
-    print('number of pro final freestyles: ' + str(len(pro_finals)))
-    print('number of pro final freestyles that did not final: ' +
-            str(len(pro_finals_did_not_final)))
-    print('number of pro finalists ' +
-            str(len(pro_finalists)))
+    print('number of pro finalists ' + str(len(pro_finals)))
+    print('number of over 30 ' + str(len(over_30)))
 # I/O
 try:
     os.mkdir('Open')
@@ -236,27 +203,27 @@ print('Select an option (1-6):')
 for line in fileinput.input():
     option = line.rstrip()
     if option == '1':
-        download_by_division('Pro Prelims', pro_prelims)
+        download_by_division('Pro_Prelims', pro_prelims)
         download_by_division('Amateur', amateurs)
-        download_by_division('Pro Finals', pro_finalists)
-        download_by_division('Non Finalists', pro_finals_did_not_final)
+        download_by_division('Pro_Finals', pro_finalists)
+        download_by_division('Over_30', over_30)
         break
     elif option == '2':
-        download_by_division('Pro Prelims', pro_prelims)
+        download_by_division('Pro_Prelims', pro_prelims)
         break
     elif option == '3':
-        download_by_division('Pro Finals', pro_finalists)
+        download_by_division('Pro_Finals', pro_finalists)
         break
     elif option == '4':
         download_by_division('Amateur', amateurs)
-        break
     elif option == '5':
-        download_by_division('Non Finalists', pro_finals_did_not_final)
+        download_by_division('Over_30', over_30)
         break
     elif option == '6':
-        generate_titles('Pro Prelims',pro_prelims)
-        generate_titles('Pro Finals',pro_finalists)
-        generate_titles('Amateur',amateurs)
+        generate_titles('Pro_Prelims', pro_prelims)
+        generate_titles('Pro_Finals', pro_finalists)
+        generate_titles('Amateur', amateurs)
+        generate_titles('Over_30', over_30)
         break
     elif option == '7':
         print('bye (-:')
