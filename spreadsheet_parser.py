@@ -110,7 +110,7 @@ def download_by_division(division_name, freestyles):
     elif division_name == 'Pro_Prelims':
         dl_function = dl_pro_pre
         ending = '_P'
-    elif division_name == 'Over 30':
+    elif division_name == 'Over_30':
         dl_function = dl_over_30
         ending = '_o_30'
 
@@ -148,8 +148,6 @@ scope = [
 credentials = ServiceAccountCredentials.from_json_keyfile_name('Scales-79fd55601efd.json', scope)
 client = gspread.authorize(credentials)
 
-print(client.open(SHEET_NAME).worksheets())
-
 # Open the spreadsheet we want to look at
 # print(client.list_spreadsheet_files())
 all_freestyles = client.open(SHEET_NAME).worksheet('Sheet1')
@@ -182,7 +180,6 @@ pro_finalists = list(
 if SHOW_FREESTYLES:
     pp.pprint(amateurs)
     pp.pprint(pro_prelims)
-    pp.pprint(pro_finals)
     pp.pprint(over_30)
     pp.pprint(pro_finalists)
 
