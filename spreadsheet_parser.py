@@ -26,7 +26,7 @@ NUM_THREADS = 5
 
 # constants used for changing values for specific contests
 SHEET_NAME = 'Scales Intl. Freestyle Submission'
-CONTEST_NAME = 'Scales International'
+CONTEST_NAME = 'Scales_International'
 CONTEST_FOLDER_NAME = 'Scales_Intl'
 THUMBNAIL_FOLDER = '/Users/colinbeckford/Desktop/Scales/Thumbnail Pictures/'
 
@@ -55,7 +55,7 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
         print('There is no order value for ' + player_name + '\'s freestyle.')
         order = 999
 
-    new_video_name = str(order) +  ' ' + CONTEST_NAME + division_name + ' - ' + player_name
+    new_video_name = ' - '.join([str(order), CONTEST_NAME, division_name, player_name])
     yt_dl_command = ''
 
     # url setup
@@ -200,9 +200,9 @@ except Exception:
 option = ''
 print('1. download all freestyles')
 print('2. download pro prelims')
-print('3. download pro finalists')
+print('3. download pro finals')
 print('4. download amateur')
-print('5. download non-finaist pro freestyles')
+print('5. download over 30')
 print('6. Generate All Video Titles')
 print('7. exit')
 print()
