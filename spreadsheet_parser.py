@@ -24,6 +24,13 @@ DEBUG = True
 SHOW_FREESTYLES = True
 NUM_THREADS = 5
 
+# constants used for changing values for specific contests
+SHEET_NAME = 'Scales Intl. Freestyle Submission'
+CONTEST_NAME = 'Scales International'
+CONTEST_FOLDER_NAME = 'Scales_Intl'
+THUMBNAIL_FOLDER = '/Users/colinbeckford/Desktop/Scales/Thumbnail Pictures/'
+
+# may or may not use
 successful_dl_names = []
 
 def dl_pro_pre(row):
@@ -48,7 +55,7 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
         print('There is no order value for ' + player_name + '\'s freestyle.')
         order = 999
 
-    new_video_name = str(order) +  ' Scales Open V4 ' + division_name + ' - ' + player_name
+    new_video_name = str(order) +  ' ' + CONTEST_NAME + division_name + ' - ' + player_name
     yt_dl_command = ''
 
     # url setup
@@ -58,7 +65,7 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
     quality_control = '-f best'
 
     # location
-    location = f'-o \'./Open/{division_name}/{new_video_name}.mp4\''
+    location = f'-o \'./{CONTEST_FOLDER_NAME}/{division_name}/{new_video_name}.mp4\''
 
     yt_dl_command = ' '.join([base, location, quality_control, url])
     print(yt_dl_command)
@@ -70,7 +77,7 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
         traceback.print_exc()
         print('--EXCEPTION -------------------------') 
 
-    thumbnail_path = '/Users/colinbeckford/Desktop/Scales/Thumbnail Pictures/'
+    thumbnail_path = THUMBNAIL_FOLDER
     first_name = player_name.split(' ')[0]
     last_initial = player_name.split(' ')[1][0]
     upper_name = player_name.upper()
@@ -124,7 +131,7 @@ def generate_titles(division_name, freestyles):
         if freestyle['Placement']:
             place = freestyle['Placement']
             name = freestyle['Name']
-            video_title = f'Scales Open Vol. 4 - {division_name} - {place} - {name}'
+            video_title = f'{CONTEST_NAME} - {division_name} - {place} - {name}'
             titles.append(video_title)
     if len(titles) > 0:
         title_file = open(f'./{division_name}_Titles.txt', 'w+')
@@ -141,15 +148,15 @@ scope = [
 credentials = ServiceAccountCredentials.from_json_keyfile_name('Scales-79fd55601efd.json', scope)
 client = gspread.authorize(credentials)
 
-print(client.open('Scales Intl. Freestyle Submission').worksheets())
+print(client.open(SHEET_NAME).worksheets())
 
 # Open the spreadsheet we want to look at
 # print(client.list_spreadsheet_files())
-all_freestyles = client.open('Scales Intl. Freestyle Submission').worksheet('Sheet1')
-sheet_pro_pre = client.open('Scales Intl. Freestyle Submission').worksheet('pro_prelim')
-sheet_pro_final = client.open('Scales Intl. Freestyle Submission').worksheet('pro_final')
-sheet_amateur = client.open('Scales Intl. Freestyle Submission').worksheet('amateur')
-sheet_over_30 = client.open('Scales Intl. Freestyle Submission').worksheet('over_30')
+all_freestyles = client.open(SHEET_NAME).worksheet('Sheet1')
+sheet_pro_pre = client.open(SHEET_NAME).worksheet('pro_prelim')
+sheet_pro_final = client.open(SHEET_NAME).worksheet('pro_final')
+sheet_amateur = client.open(SHEET_NAME).worksheet('amateur')
+sheet_over_30 = client.open(SHEET_NAME).worksheet('over_30')
 
 # Grab all the submitted freestyles from the sheet
 pro_prelims = list(sheet_pro_pre.get_all_records())
@@ -187,7 +194,7 @@ if DEBUG:
     print('number of over 30 ' + str(len(over_30)))
 # I/O
 try:
-    os.mkdir('Open')
+    os.mkdir(CONTEST_FOLDER_NAME)
 except Exception:
     pass
 option = ''

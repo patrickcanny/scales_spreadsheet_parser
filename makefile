@@ -5,5 +5,5 @@ run:
 	python3 spreadsheet_parser.py
 
 clean:
-	rm -rf Open
+	rm -rf Scales_Intl
 	rm *Titles.txt
