@@ -20,30 +20,31 @@ import time
 from multiprocessing import Pool
 
 # Debugging variables, ideally we can set these in the script at runtime
-DEBUG = True
-SHOW_FREESTYLES = True
+DEBUG = False
+SHOW_FREESTYLES = False
 NUM_THREADS = 5
 
 # constants used for changing values for specific contests
 SHEET_NAME = 'Scales Intl. Freestyle Submission'
 CONTEST_NAME = 'Scales_International'
 CONTEST_FOLDER_NAME = 'Scales_Intl'
-THUMBNAIL_FOLDER = '/Users/colinbeckford/Desktop/Scales/Thumbnail Pictures/'
 
-# may or may not use
+# TODO change this, probably
+THUMBNAIL_FOLDER = '/Users/colinbeckford/Desktop/Scales/Thumbnail_Pictures/'
+
 successful_dl_names = []
 
 def dl_pro_pre(row):
-    yt_dl(row, 'Pro_Prelim', '_P')
+    return yt_dl(row, 'Pro_Prelim', '_P')
 
 def dl_pro_final(row):
-    yt_dl(row, 'Pro_Final', '_F')
+    return yt_dl(row, 'Pro_Final', '_F')
 
 def dl_am(row):
-    yt_dl(row, 'Amateur', '_A')
+    return yt_dl(row, 'Amateur', '_A')
 
 def dl_over_30(row):
-    yt_dl(row, 'Over_30', '_30')
+    return yt_dl(row, 'Over_30', '_30')
 
 def yt_dl(row, division_name='NO_DIV', ending=''):
     url = row['Link']
@@ -79,15 +80,17 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
 
     thumbnail_path = THUMBNAIL_FOLDER
     first_name = player_name.split(' ')[0]
-    last_initial = player_name.split(' ')[1][0]
+    last_name = player_name.split(' ')[1]
     upper_name = player_name.upper()
-    thumb = thumbnail_path + first_name + last_initial + ending + '.jpg'
+    thumb = thumbnail_path + first_name + '_' + last_name + ending + '.jpg'
     csv_vals = list(upper_name.split(' '))
     csv_vals.append(thumb)
     csv_string = ",".join(csv_vals)
-    successful_dl_names.append(csv_string)
-    print()
-    return(new_video_name)
+    print('---------------------------------------')
+    print(csv_string)
+    print('---------------------------------------')
+
+    return(csv_string)
 
 # @function download_by_division given a division name and a list of freestyles
 # for that division, download them into an appropriate folder
@@ -98,7 +101,7 @@ def download_by_division(division_name, freestyles):
     unavailable_freestyles = []
     dl_function = None
     # change if needed
-    thumbnail_path = '/Users/colinbeckford/Desktop/Scales/Thumbnail Pictures/'
+    thumbnail_path = THUMBNAIL_FOLDER
 
     ending = ""
     if division_name == 'Amateur':
@@ -114,8 +117,24 @@ def download_by_division(division_name, freestyles):
         dl_function = dl_over_30
         ending = '_o_30'
 
+    # TODO multithread?
+    csvs = []
     with Pool(NUM_THREADS) as pool:
-        result = pool.map(dl_function, freestyles)
+        csvs = pool.map(dl_function, freestyles)
+        pool.close()
+        pool.join()
+
+    # write csv values to a file
+    print(csvs)
+    if csvs:
+        f = open(f'./{CONTEST_FOLDER_NAME}/{division_name}/thumbs.csv', 'w+')
+        f.write('FirstName,LastName,ThumnailPath\n')
+        for line in csvs:
+            f.write(line)
+            f.write('\n')
+        f.close()
+
+    print('just wrote thumnails to file')
 
     # wrap up
     print('Done with ' + division_name)
