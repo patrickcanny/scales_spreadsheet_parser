@@ -2,3 +2,4 @@
 Open/*
 ./video_uploader/env/*
 ./video_uploader/*.json
+*.swp
