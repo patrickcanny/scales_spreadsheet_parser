@@ -107,10 +107,10 @@ def download_by_division(division_name, freestyles):
     if division_name == 'Amateur':
         dl_function = dl_am
         ending = '_A'
-    elif division_name == 'Pro_Finals':
+    elif division_name == 'Pro_Final':
         dl_function = dl_pro_final
         ending = '_F'
-    elif division_name == 'Pro_Prelims':
+    elif division_name == 'Pro_Prelim':
         dl_function = dl_pro_pre
         ending = '_P'
     elif division_name == 'Over_30':
@@ -226,16 +226,16 @@ print('Select an option (1-6):')
 for line in fileinput.input():
     option = line.rstrip()
     if option == '1':
-        download_by_division('Pro_Prelims', pro_prelims)
+        download_by_division('Pro_Prelim', pro_prelims)
         download_by_division('Amateur', amateurs)
-        download_by_division('Pro_Finals', pro_finalists)
+        download_by_division('Pro_Final', pro_finalists)
         download_by_division('Over_30', over_30)
         break
     elif option == '2':
-        download_by_division('Pro_Prelims', pro_prelims)
+        download_by_division('Pro_Prelim', pro_prelims)
         break
     elif option == '3':
-        download_by_division('Pro_Finals', pro_finalists)
+        download_by_division('Pro_Final', pro_finalists)
         break
     elif option == '4':
         download_by_division('Amateur', amateurs)
@@ -243,8 +243,8 @@ for line in fileinput.input():
         download_by_division('Over_30', over_30)
         break
     elif option == '6':
-        generate_titles('Pro_Prelims', pro_prelims)
-        generate_titles('Pro_Finals', pro_finalists)
+        generate_titles('Pro_Prelim', pro_prelims)
+        generate_titles('Pro_Final', pro_finalists)
         generate_titles('Amateur', amateurs)
         generate_titles('Over_30', over_30)
         break
