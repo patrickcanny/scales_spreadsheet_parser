@@ -83,7 +83,7 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
     last_name = player_name.split(' ')[1]
     upper_name = player_name.upper()
     thumb = thumbnail_path + first_name + '_' + last_name + ending + '.jpg'
-    csv_vals = list(player_name, thumb)
+    csv_vals = [player_name,thumb]
     csv_string = ",".join(csv_vals)
     print('---------------------------------------')
     print(csv_string)
