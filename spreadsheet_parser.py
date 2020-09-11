@@ -30,7 +30,7 @@ CONTEST_NAME = 'Scales_International'
 CONTEST_FOLDER_NAME = 'Scales_Intl'
 
 # TODO change this, probably
-THUMBNAIL_FOLDER = '/Users/colinbeckford/Desktop/Scales/Thumbnail_Pictures/'
+THUMBNAIL_FOLDER = 'C:/Users/colin/Desktop/Scales/Thumbnail_Pictures/'
 
 successful_dl_names = []
 
