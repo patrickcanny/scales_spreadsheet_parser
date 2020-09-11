@@ -83,8 +83,7 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
     last_name = player_name.split(' ')[1]
     upper_name = player_name.upper()
     thumb = thumbnail_path + first_name + '_' + last_name + ending + '.jpg'
-    csv_vals = list(upper_name.split(' '))
-    csv_vals.append(thumb)
+    csv_vals = list(player_name, thumb)
     csv_string = ",".join(csv_vals)
     print('---------------------------------------')
     print(csv_string)
@@ -128,7 +127,7 @@ def download_by_division(division_name, freestyles):
     print(csvs)
     if csvs:
         f = open(f'./{CONTEST_FOLDER_NAME}/{division_name}/thumbs.csv', 'w+')
-        f.write('FirstName,LastName,ThumnailPath\n')
+        f.write('Name,ThumnailPath\n')
         for line in csvs:
             f.write(line)
             f.write('\n')
