@@ -13,7 +13,6 @@ setup:
 	touch Scales_Intl/Over_30/thumbs.csv
 
 run:
-	make setup
 	python3 spreadsheet_parser.py
 
 clean:

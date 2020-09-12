@@ -238,6 +238,7 @@ for line in fileinput.input():
         break
     elif option == '4':
         download_by_division('Amateur', amateurs)
+        break
     elif option == '5':
         download_by_division('Over_30', over_30)
         break
