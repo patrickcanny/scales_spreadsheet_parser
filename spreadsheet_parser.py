@@ -192,7 +192,7 @@ pp = pprint.PrettyPrinter()
 # pro_finals_did_not_final = list(
 #         filter(lambda x: x['Made Finals'] == 0, pro_finals))
 pro_finalists = list(
-        filter(lambda x: x['Finalist'] == 'y', pro_finals))
+        filter(lambda x: x['Finalist'] == 'Y', pro_finals))
 
 # Print the freestyle lists
 if SHOW_FREESTYLES:
