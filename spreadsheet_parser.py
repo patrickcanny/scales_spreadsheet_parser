@@ -63,7 +63,7 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
     base = 'youtube-dl --no-check-certificate'
 
     # always get best we can
-    quality_control = '-f mp4'
+    quality_control = '-f best'
 
     # location
     location = f'-o \'./{CONTEST_FOLDER_NAME}/{division_name}/{new_video_name}.mp4\''
@@ -83,7 +83,7 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
     last_name = player_name.split(' ')[1]
     upper_name = player_name.upper()
     thumb = thumbnail_path + first_name + '_' + last_name + ending + '.jpg'
-    csv_vals = [player_name,thumb]
+    csv_vals = [first_name,last_name,thumb]
     csv_string = ",".join(csv_vals)
     print('---------------------------------------')
     print(csv_string)
