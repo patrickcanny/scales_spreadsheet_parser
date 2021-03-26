@@ -18,19 +18,20 @@ import re
 import traceback
 import time
 from multiprocessing import Pool
+import string
 
 # Debugging variables, ideally we can set these in the script at runtime
 DEBUG = False
 SHOW_FREESTYLES = False
-NUM_THREADS = 5
+NUM_THREADS = 1
 
 # constants used for changing values for specific contests
-SHEET_NAME = 'Scales Intl. Freestyle Submission'
-CONTEST_NAME = 'Scales_International'
-CONTEST_FOLDER_NAME = 'Scales_Intl'
+SHEET_NAME = 'SOV Freestyle Submission'
+CONTEST_NAME = 'Scales_Open_V'
+CONTEST_FOLDER_NAME = 'Scales_V'
 
 # TODO change this, probably
-THUMBNAIL_FOLDER = 'C:/Users/colin/Desktop/Scales/Thumbnail_Pictures/'
+THUMBNAIL_FOLDER = './Thumbnails/'
 
 successful_dl_names = []
 
@@ -79,9 +80,9 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
         print('--EXCEPTION -------------------------') 
 
     thumbnail_path = THUMBNAIL_FOLDER
-    first_name = player_name.split(' ')[0]
-    last_name = player_name.split(' ')[1]
-    upper_name = player_name.upper()
+    first_name = player_name.split(' ')[0].translate(str.maketrans('', '', string.punctuation))
+    last_name = player_name.split(' ')[1].translate(str.maketrans('', '', string.punctuation))
+    upper_name = player_name.translate(str.maketrans('', '', string.punctuation)).upper()
     thumb = thumbnail_path + first_name + '_' + last_name + ending + '.jpg'
     csv_vals = [first_name,last_name,thumb]
     csv_string = ",".join(csv_vals)
