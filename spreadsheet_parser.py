@@ -63,7 +63,7 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
     base = 'youtube-dl --no-check-certificate'
 
     # always get best we can
-    quality_control = '-f best'
+    quality_control = '-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"'
 
     # location
     location = f'-o \'./{CONTEST_FOLDER_NAME}/{division_name}/{new_video_name}.mp4\''
