@@ -26,9 +26,13 @@ SHOW_FREESTYLES = False
 NUM_THREADS = 1
 
 # constants used for changing values for specific contests
-SHEET_NAME = 'SOV Freestyle Submission'
-CONTEST_NAME = 'Scales_Open_V'
-CONTEST_FOLDER_NAME = 'Scales_V'
+SHEET_NAME = 'Scales Open V6 Freestyle Submission (Responses)'
+ROOT_FORM_NAME = 'Form Responses 1'
+CONTEST_NAME = 'Scales_Open_VI'
+CONTEST_FOLDER_NAME = 'Scales_VI'
+VIDEO_LINK_COL = 'Video File Upload'
+VIDEO_NAME_COL = 'Generated Video Name'
+PLAYER_NAME_COL = 'Competitor Name'
 
 # TODO change this, probably
 THUMBNAIL_FOLDER = './Thumbnails/'
@@ -41,23 +45,43 @@ def dl_pro_pre(row):
 def dl_pro_final(row):
     return yt_dl(row, 'Pro_Final', '_F')
 
+def dl_x_pre(row):
+    return yt_dl(row, 'X_Prelim', '_XP')
+
+def dl_x_final(row):
+    return yt_dl(row, 'X_Final', '_XF')
+
 def dl_am(row):
     return yt_dl(row, 'Amateur', '_A')
+
+def dl_int(row):
+    return yt_dl(row, 'Intermediate', '_INT')
+
+def dl_int(row):
+    return yt_dl(row, 'Intermediate', '_INT')
+
+def dl_creative(row):
+    return yt_dl(row, 'Creative', '_CREATIVE')
 
 def dl_over_30(row):
     return yt_dl(row, 'Over_30', '_30')
 
 def yt_dl(row, division_name='NO_DIV', ending=''):
-    url = row['Link']
-    player_name = row['Name']
-    if row['Order']:
+    url = row[VIDEO_LINK_COL]
+    player_name = row[PLAYER_NAME_COL]
+    new_video_name = row[VIDEO_NAME_COL]
+    should_dl = row['Uploaded?'] != 'y'
+
+    if not should_dl:
+        return
+
+    try:
         order = row['Order']
         order = str(order).zfill(3)
-    else:
+    except KeyError:
         print('There is no order value for ' + player_name + '\'s freestyle.')
         order = 999
 
-    new_video_name = ' - '.join([str(order), CONTEST_NAME, division_name, player_name])
     yt_dl_command = ''
 
     # url setup
@@ -81,7 +105,10 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
 
     thumbnail_path = THUMBNAIL_FOLDER
     first_name = player_name.split(' ')[0].translate(str.maketrans('', '', string.punctuation))
-    last_name = player_name.split(' ')[1].translate(str.maketrans('', '', string.punctuation))
+    try:
+        last_name = player_name.split(' ')[1].translate(str.maketrans('', '', string.punctuation))
+    except IndexError:
+        last_name = ''
     upper_name = player_name.translate(str.maketrans('', '', string.punctuation)).upper()
     thumb = thumbnail_path + first_name + '_' + last_name + ending + '.jpg'
     csv_vals = [first_name,last_name,thumb]
@@ -107,29 +134,47 @@ def download_by_division(division_name, freestyles):
     if division_name == 'Amateur':
         dl_function = dl_am
         ending = '_A'
+    if division_name == 'Intermediate':
+        dl_function = dl_int
+        ending = '_INT'
     elif division_name == 'Pro_Final':
         dl_function = dl_pro_final
         ending = '_F'
     elif division_name == 'Pro_Prelim':
         dl_function = dl_pro_pre
         ending = '_P'
+    elif division_name == 'X_Final':
+        dl_function = dl_x_final
+        ending = '_XF'
+    elif division_name == 'X_Prelim':
+        dl_function = dl_x_pre
+        ending = '_XP'
     elif division_name == 'Over_30':
         dl_function = dl_over_30
         ending = '_o_30'
+    elif division_name == 'Creative':
+        dl_function = dl_creative
+        ending = '_CREA'
 
+
+    csvs = map(dl_function, freestyles)
+    
     # TODO multithread?
-    csvs = []
-    with Pool(NUM_THREADS) as pool:
-        csvs = pool.map(dl_function, freestyles)
-        pool.close()
-        pool.join()
+    # with Pool(NUM_THREADS) as pool:
+    #     csvs = pool.map(dl_function, freestyles)
+    #     pool.close()
+    #     pool.join()
 
     # write csv values to a file
     print(csvs)
     if csvs:
+        if not os.path.exists(f'./{CONTEST_FOLDER_NAME}/{division_name}'):
+            os.makedirs(f'./{CONTEST_FOLDER_NAME}/{division_name}')
         f = open(f'./{CONTEST_FOLDER_NAME}/{division_name}/thumbs.csv', 'w+')
         f.write('Name,ThumnailPath\n')
         for line in csvs:
+            if not line:
+                line = 'ERROR'
             f.write(line)
             f.write('\n')
         f.close()
@@ -169,17 +214,26 @@ client = gspread.authorize(credentials)
 
 # Open the spreadsheet we want to look at
 # print(client.list_spreadsheet_files())
-all_freestyles = client.open(SHEET_NAME).worksheet('Sheet1')
+sheet_all_freestyles = client.open(SHEET_NAME).worksheet(ROOT_FORM_NAME)
 sheet_pro_pre = client.open(SHEET_NAME).worksheet('pro_prelim')
 sheet_pro_final = client.open(SHEET_NAME).worksheet('pro_final')
+sheet_x_pre = client.open(SHEET_NAME).worksheet('x_prelim')
+sheet_x_final = client.open(SHEET_NAME).worksheet('x_final')
 sheet_amateur = client.open(SHEET_NAME).worksheet('amateur')
+sheet_intermediate = client.open(SHEET_NAME).worksheet('intermediate')
 sheet_over_30 = client.open(SHEET_NAME).worksheet('over_30')
+sheet_creative = client.open(SHEET_NAME).worksheet('creative_video_contest')
 
 # Grab all the submitted freestyles from the sheet
+all_freestyles = list(sheet_all_freestyles.get_all_records())
 pro_prelims = list(sheet_pro_pre.get_all_records())
+x_finals = list(sheet_x_final.get_all_records())
+x_prelims = list(sheet_x_pre.get_all_records())
 pro_finals = list(sheet_pro_final.get_all_records())
 amateurs = list(sheet_amateur.get_all_records())
+intermediate = list(sheet_intermediate.get_all_records())
 over_30 = list(sheet_over_30.get_all_records())
+creative = list(sheet_creative.get_all_records())
 
 # set up pp
 pp = pprint.PrettyPrinter()
@@ -194,6 +248,10 @@ pp = pprint.PrettyPrinter()
 #         filter(lambda x: x['Made Finals'] == 0, pro_finals))
 pro_finalists = list(
         filter(lambda x: x['Finalist'] == 'Y', pro_finals))
+
+# filter by not upladed
+all_freestyles = list(
+        filter(lambda x: x['Uploaded?'] == 'y', all_freestyles))
 
 # Print the freestyle lists
 if SHOW_FREESTYLES:
@@ -220,7 +278,11 @@ print('3. download pro finals')
 print('4. download amateur')
 print('5. download over 30')
 print('6. Generate All Video Titles')
-print('7. exit')
+print('7. download x prelims')
+print('8. download x finals')
+print('9. download intermediate')
+print('10. download creative')
+print('11. exit')
 print()
 print('Select an option (1-6):')
 for line in fileinput.input():
@@ -230,6 +292,10 @@ for line in fileinput.input():
         download_by_division('Amateur', amateurs)
         download_by_division('Pro_Final', pro_finalists)
         download_by_division('Over_30', over_30)
+        download_by_division('X_Prelim', x_prelims)
+        download_by_division('X_Final', x_finals)
+        download_by_division('Intermediate', intermediate)
+        download_by_division('Creative', creative)
         break
     elif option == '2':
         download_by_division('Pro_Prelim', pro_prelims)
@@ -250,5 +316,17 @@ for line in fileinput.input():
         generate_titles('Over_30', over_30)
         break
     elif option == '7':
+        download_by_division('X_Prelim', x_prelims)
+        break
+    elif option == '8':
+        download_by_division('X_Final', x_finals)
+        break
+    elif option == '9':
+        download_by_division('Intermediate', intermediate)
+        break
+    elif option == '10':
+        download_by_division('Creative', creative)
+        break
+    elif option == '11':
         print('bye (-:')
         break
