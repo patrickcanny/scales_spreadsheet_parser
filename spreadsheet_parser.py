@@ -61,7 +61,7 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
     yt_dl_command = ''
 
     # url setup
-    base = 'youtube-dl --no-check-certificate'
+    base = 'youtube-dl --no-check-certificate --write-thumbnail'
 
     # always get best we can
     quality_control = '-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"'
