@@ -67,13 +67,15 @@ def dl_over_30(row):
     return yt_dl(row, 'Over_30', '_30')
 
 def yt_dl(row, division_name='NO_DIV', ending=''):
+    if DEBUG:
+        print('YT DL')
+        print('ROW')
+        print(row)
+
     url = row[VIDEO_LINK_COL]
     player_name = row[PLAYER_NAME_COL]
     new_video_name = row[VIDEO_NAME_COL]
-    should_dl = row['Uploaded?'] != 'y'
-
-    if not should_dl:
-        return
+    re.sub('[^A-Za-z0-9]+', '', new_video_name)
 
     try:
         order = row['Order']
@@ -85,7 +87,8 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
     yt_dl_command = ''
 
     # url setup
-    base = 'youtube-dl --no-check-certificate --write-thumbnail'
+    # base = 'youtube-dl --no-check-certificate --write-thumbnail'
+    base = 'youtube-dl --no-check-certificate'
 
     # always get best we can
     quality_control = '-f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"'
@@ -103,27 +106,26 @@ def yt_dl(row, division_name='NO_DIV', ending=''):
         traceback.print_exc()
         print('--EXCEPTION -------------------------') 
 
-    thumbnail_path = THUMBNAIL_FOLDER
-    first_name = player_name.split(' ')[0].translate(str.maketrans('', '', string.punctuation))
-    try:
-        last_name = player_name.split(' ')[1].translate(str.maketrans('', '', string.punctuation))
-    except IndexError:
-        last_name = ''
-    upper_name = player_name.translate(str.maketrans('', '', string.punctuation)).upper()
-    thumb = thumbnail_path + first_name + '_' + last_name + ending + '.jpg'
-    csv_vals = [first_name,last_name,thumb]
-    csv_string = ",".join(csv_vals)
-    print('---------------------------------------')
-    print(csv_string)
-    print('---------------------------------------')
+    # TODO enable if thumbnails are needed
+    # thumbnail_path = THUMBNAIL_FOLDER
+    # deburred_player_name = re.sub('[^a-zA-Z0-9 \n\.]', '', player_name)
+    # upper_name = deburred_player_name.upper()
+    # thumb = thumbnail_path + deburred_player_name + ending + '.jpg'
+    # csv_vals = [deburred_player_name,thumb]
+    # csv_string = ",".join(csv_vals)
+    # print('---------------------------------------')
+    # print(csv_string)
+    # print('---------------------------------------')
 
-    return(csv_string)
+    # return(csv_string)
+    return new_video_name
 
 # @function download_by_division given a division name and a list of freestyles
 # for that division, download them into an appropriate folder
 # @param division_name a string that represents the divison name
 # @param freestyles a list of freestyles
 def download_by_division(division_name, freestyles):
+    print('Downloading Division ' + division_name + ' with ' + str(len(freestyles)) + ' freestyles to download.')
     failed_downloads = []
     unavailable_freestyles = []
     dl_function = None
@@ -157,29 +159,23 @@ def download_by_division(division_name, freestyles):
         ending = '_CREA'
 
 
-    csvs = map(dl_function, freestyles)
-    
-    # TODO multithread?
-    # with Pool(NUM_THREADS) as pool:
-    #     csvs = pool.map(dl_function, freestyles)
-    #     pool.close()
-    #     pool.join()
-
+    csvs = list(map(dl_function, freestyles))
+   
+    # TODO enable if we need thumbs
     # write csv values to a file
-    print(csvs)
-    if csvs:
-        if not os.path.exists(f'./{CONTEST_FOLDER_NAME}/{division_name}'):
-            os.makedirs(f'./{CONTEST_FOLDER_NAME}/{division_name}')
-        f = open(f'./{CONTEST_FOLDER_NAME}/{division_name}/thumbs.csv', 'w+')
-        f.write('Name,ThumnailPath\n')
-        for line in csvs:
-            if not line:
-                line = 'ERROR'
-            f.write(line)
-            f.write('\n')
-        f.close()
+    # if csvs:
+    #     if not os.path.exists(f'./{CONTEST_FOLDER_NAME}/{division_name}'):
+    #         os.makedirs(f'./{CONTEST_FOLDER_NAME}/{division_name}')
+    #     f = open(f'./{CONTEST_FOLDER_NAME}/{division_name}/thumbs.csv', 'w+')
+    #     f.write('Name,ThumnailPath\n')
+    #     for line in csvs:
+    #         if not line:
+    #             line = 'ERROR'
+    #         f.write(line)
+    #         f.write('\n')
+    #     f.close()
 
-    print('just wrote thumnails to file')
+    # print('just wrote thumnails to file')
 
     # wrap up
     print('Done with ' + division_name)
@@ -213,45 +209,42 @@ credentials = ServiceAccountCredentials.from_json_keyfile_name('Scales-79fd55601
 client = gspread.authorize(credentials)
 
 # Open the spreadsheet we want to look at
-# print(client.list_spreadsheet_files())
 sheet_all_freestyles = client.open(SHEET_NAME).worksheet(ROOT_FORM_NAME)
-sheet_pro_pre = client.open(SHEET_NAME).worksheet('pro_prelim')
-sheet_pro_final = client.open(SHEET_NAME).worksheet('pro_final')
-sheet_x_pre = client.open(SHEET_NAME).worksheet('x_prelim')
-sheet_x_final = client.open(SHEET_NAME).worksheet('x_final')
-sheet_amateur = client.open(SHEET_NAME).worksheet('amateur')
-sheet_intermediate = client.open(SHEET_NAME).worksheet('intermediate')
-sheet_over_30 = client.open(SHEET_NAME).worksheet('over_30')
-sheet_creative = client.open(SHEET_NAME).worksheet('creative_video_contest')
 
 # Grab all the submitted freestyles from the sheet
 all_freestyles = list(sheet_all_freestyles.get_all_records())
-pro_prelims = list(sheet_pro_pre.get_all_records())
-x_finals = list(sheet_x_final.get_all_records())
-x_prelims = list(sheet_x_pre.get_all_records())
-pro_finals = list(sheet_pro_final.get_all_records())
-amateurs = list(sheet_amateur.get_all_records())
-intermediate = list(sheet_intermediate.get_all_records())
-over_30 = list(sheet_over_30.get_all_records())
-creative = list(sheet_creative.get_all_records())
 
 # set up pp
 pp = pprint.PrettyPrinter()
 
-# filter the freestyles by round
-# amateurs = list( filter(lambda x: x['Round of Video'] == 'Amateur', freestyles) )
-# pro_prelims = list( filter(lambda x: x['Round of Video'] == 'Pro Prelim', freestyles) )
-# pro_finals = list( filter(lambda x: x['Round of Video'] == 'Pro Final', freestyles) )
+# filter by not uploaded
+# all_freestyles = list(
+#         filter(lambda x: x['Uploaded?'] != 'y', all_freestyles))
+
+pro_prelims = list(
+        filter(lambda x: x['Division'] == 'Pro Prelim', all_freestyles))
+pro_finals = list(
+        filter(lambda x: x['Division'] == 'Pro Final', all_freestyles))
+x_prelims = list(
+        filter(lambda x: x['Division'] == 'X Prelim', all_freestyles))
+x_finals = list(
+        filter(lambda x: x['Division'] == 'X Final', all_freestyles))
+amateurs = list(
+        filter(lambda x: x['Division'] == 'Amateur', all_freestyles))
+intermediate = list(
+        filter(lambda x: x['Division'] == 'Intermediate', all_freestyles))
+over_30 = list(
+        filter(lambda x: x['Division'] == 'Over 30', all_freestyles))
+creative = list(
+        filter(lambda x: x['Division'] == 'Creative Video Contest', all_freestyles))
 
 # filter the submitted pro finals by who made finals
-# pro_finals_did_not_final = list(
-#         filter(lambda x: x['Made Finals'] == 0, pro_finals))
-pro_finalists = list(
-        filter(lambda x: x['Finalist'] == 'Y', pro_finals))
+try:
+    pro_finalists = list(
+            filter(lambda x: x['Finalist'] == 'Y', pro_finals))
+except KeyError:
+    pro_finalists = []
 
-# filter by not upladed
-all_freestyles = list(
-        filter(lambda x: x['Uploaded?'] == 'y', all_freestyles))
 
 # Print the freestyle lists
 if SHOW_FREESTYLES:
@@ -290,7 +283,7 @@ for line in fileinput.input():
     if option == '1':
         download_by_division('Pro_Prelim', pro_prelims)
         download_by_division('Amateur', amateurs)
-        download_by_division('Pro_Final', pro_finalists)
+        download_by_division('Pro_Final', pro_finals)
         download_by_division('Over_30', over_30)
         download_by_division('X_Prelim', x_prelims)
         download_by_division('X_Final', x_finals)
@@ -301,7 +294,7 @@ for line in fileinput.input():
         download_by_division('Pro_Prelim', pro_prelims)
         break
     elif option == '3':
-        download_by_division('Pro_Final', pro_finalists)
+        download_by_division('Pro_Final', pro_finals)
         break
     elif option == '4':
         download_by_division('Amateur', amateurs)
